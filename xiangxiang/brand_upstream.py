@@ -23,6 +23,24 @@ def replace_required(path: Path, old: str, new: str, minimum: int = 1) -> None:
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
+def patch_user_directory(path: Path) -> None:
+    """Patch whichever user-directory spelling exists in this Squirrel revision."""
+    text = path.read_text(encoding="utf-8")
+    replacements = (
+        ('"Library", "Rime"', '"Library", "XiangXiangInput"'),
+        ('appendPathComponent("Rime",', 'appendPathComponent("XiangXiangInput",'),
+    )
+    count = 0
+    for old, new in replacements:
+        occurrences = text.count(old)
+        if occurrences:
+            text = text.replace(old, new)
+            count += occurrences
+    if count == 0:
+        raise RuntimeError(f"Could not find a supported Rime user-directory declaration in {path}")
+    path.write_text(text, encoding="utf-8")
+
+
 def patch_info_plist(root: Path) -> None:
     path = root / "resources" / "Info.plist"
     with path.open("rb") as handle:
@@ -90,8 +108,7 @@ def main() -> int:
     patch_info_plist(root)
 
     main_swift = root / "sources" / "Main.swift"
-    replace_required(main_swift, '"Library", "Rime"', '"Library", "XiangXiangInput"')
-    replace_required(main_swift, 'appendPathComponent("Rime",', 'appendPathComponent("XiangXiangInput",')
+    patch_user_directory(main_swift)
     replace_required(main_swift, '"/Library/Input Methods/Squirrel.app"', '"/Library/Input Methods/XiangXiangInput.app"')
     replace_required(main_swift, '"rime.squirrel-builder"', '"xiangxiang.input-builder"')
     replace_required(main_swift, '"rime.squirrel"', '"xiangxiang.input"')
