@@ -1,0 +1,41 @@
+#!/bin/bash
+set -euo pipefail
+
+login_user="$(/usr/bin/stat -f%Su /dev/console)"
+target_volume="${3:-/}"
+app_root="${target_volume}/Library/Input Methods/XiangXiangInput.app"
+executable="${app_root}/Contents/MacOS/XiangXiangInput"
+defaults="${app_root}/Contents/SharedSupport/XiangXiangDefaults"
+user_home="$(/usr/bin/dscl . -read "/Users/${login_user}" NFSHomeDirectory | /usr/bin/awk '{print $2}')"
+user_dir="${user_home}/Library/XiangXiangInput"
+
+/usr/bin/killall XiangXiangInput >/dev/null 2>&1 || true
+
+/usr/bin/sudo -u "${login_user}" /bin/mkdir -p "${user_dir}/lua"
+
+copy_if_missing() {
+  source_path="$1"
+  destination_path="$2"
+  if [ ! -e "${destination_path}" ]; then
+    /usr/bin/sudo -u "${login_user}" /bin/cp "${source_path}" "${destination_path}"
+  fi
+}
+
+copy_if_missing "${defaults}/lua/sentence_recorder.lua" "${user_dir}/lua/sentence_recorder.lua"
+copy_if_missing "${defaults}/lua/personal_translate.lua" "${user_dir}/lua/personal_translate.lua"
+copy_if_missing "${defaults}/default.custom.yaml" "${user_dir}/default.custom.yaml"
+copy_if_missing "${defaults}/luna_pinyin.custom.yaml" "${user_dir}/luna_pinyin.custom.yaml"
+
+if [ ! -e "${user_dir}/personal_translate.tsv" ]; then
+  old_lexicon="${user_home}/Library/Rime/personal_translate.tsv"
+  if [ -e "${old_lexicon}" ]; then
+    /usr/bin/sudo -u "${login_user}" /bin/cp "${old_lexicon}" "${user_dir}/personal_translate.tsv"
+  else
+    copy_if_missing "${defaults}/personal_translate.tsv" "${user_dir}/personal_translate.tsv"
+  fi
+fi
+
+"${executable}" --register-input-source
+"${executable}" --build
+/usr/bin/sudo -u "${login_user}" "${executable}" --enable-input-source
+/usr/bin/sudo -u "${login_user}" "${executable}" --select-input-source

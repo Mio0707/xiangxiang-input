@@ -1,0 +1,86 @@
+name: Build XiangXiang Input
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-xiangxiang.yml"
+      - "xiangxiang/**"
+      - "personal-english-input/rime/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout XiangXiang sources
+        uses: actions/checkout@v6
+
+      - name: Checkout official Squirrel
+        uses: actions/checkout@v6
+        with:
+          repository: rime/squirrel
+          ref: master
+          path: upstream
+          submodules: recursive
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.5"
+
+      - name: Apply XiangXiang branding
+        run: python3 xiangxiang/brand_upstream.py upstream
+
+      - name: Install upstream binary dependencies
+        working-directory: upstream
+        run: bash ./action-install.sh
+
+      - name: Build universal app
+        working-directory: upstream
+        run: make release ARCHS="arm64 x86_64" BUILD_UNIVERSAL=1
+
+      - name: Add personal-English defaults
+        run: |
+          app="upstream/build/Build/Products/Release/XiangXiangInput.app"
+          defaults="$app/Contents/SharedSupport/XiangXiangDefaults"
+          test -d "$app"
+          mkdir -p "$defaults/lua"
+          cp personal-english-input/rime/sentence_recorder.lua "$defaults/lua/"
+          sed 's#/Library/Rime/personal_translate.tsv#/Library/XiangXiangInput/personal_translate.tsv#' \
+            personal-english-input/rime/personal_translate.lua \
+            > "$defaults/lua/personal_translate.lua"
+          cp xiangxiang/defaults/default.custom.yaml "$defaults/"
+          cp xiangxiang/defaults/luna_pinyin.custom.yaml "$defaults/"
+          printf '#rev=0\n' > "$defaults/personal_translate.tsv"
+          codesign --force --deep --sign - "$app"
+
+      - name: Verify branded app
+        run: python3 xiangxiang/verify_app.py upstream/build/Build/Products/Release/XiangXiangInput.app
+
+      - name: Build unsigned test installer
+        run: |
+          app="upstream/build/Build/Products/Release/XiangXiangInput.app"
+          mkdir -p staging/Library/Input\ Methods dist
+          cp -R "$app" staging/Library/Input\ Methods/
+          chmod +x xiangxiang/package/scripts/postinstall
+          pkgbuild \
+            --root staging \
+            --identifier com.xiangxiang.inputmethod.XiangXiangInput \
+            --version 0.1.0 \
+            --scripts xiangxiang/package/scripts \
+            --install-location / \
+            dist/XiangXiangInput-0.1.0-unsigned.pkg
+
+      - name: Upload test installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: XiangXiangInput-unsigned
+          path: dist/XiangXiangInput-0.1.0-unsigned.pkg
+          if-no-files-found: error

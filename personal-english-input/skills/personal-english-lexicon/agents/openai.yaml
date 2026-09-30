@@ -1,0 +1,6 @@
+interface:
+  display_name: "个人英语词库更新"
+  short_description: "整理 Rime 中文句子并更新个人英语词汇与翻译文档"
+  default_prompt: "使用 $personal-english-lexicon 处理尚未分析的中文句子，并生成句子翻译与个人词汇文档。"
+policy:
+  allow_implicit_invocation: true
