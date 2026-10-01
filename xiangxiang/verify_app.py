@@ -70,6 +70,18 @@ def main() -> int:
     if visible_modes != [f"{EXPECTED_BUNDLE_ID}.Hans"]:
         raise RuntimeError(f"Expected one Simplified Chinese input mode, got: {visible_modes}")
 
+    entitlement_output = subprocess.check_output(
+        ["codesign", "-d", "--entitlements", ":-", str(app)], stderr=subprocess.STDOUT
+    )
+    plist_start = entitlement_output.find(b"<?xml")
+    if plist_start < 0:
+        raise RuntimeError("Missing app entitlements")
+    entitlements = plistlib.loads(entitlement_output[plist_start:])
+    if entitlements.get("com.apple.security.cs.disable-library-validation") is not True:
+        raise RuntimeError("Missing disable-library-validation entitlement")
+    if entitlements.get("com.apple.security.app-sandbox") is not False:
+        raise RuntimeError("Unexpected app sandbox entitlement")
+
     print(f"Verified {EXPECTED_NAME}: {EXPECTED_BUNDLE_ID}; architectures: {' '.join(archs)}")
     return 0
 

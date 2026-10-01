@@ -59,7 +59,9 @@ jobs:
           cp xiangxiang/defaults/default.custom.yaml "$defaults/"
           cp xiangxiang/defaults/luna_pinyin.custom.yaml "$defaults/"
           printf '#rev=0\n' > "$defaults/personal_translate.tsv"
-          codesign --force --deep --sign - "$app"
+          codesign --force --deep --sign - \
+            --entitlements upstream/resources/Squirrel.entitlements \
+            "$app"
 
       - name: Verify branded app
         run: python3 xiangxiang/verify_app.py upstream/build/Build/Products/Release/XiangXiangInput.app
@@ -73,14 +75,14 @@ jobs:
           pkgbuild \
             --root staging \
             --identifier com.xiangxiang.inputmethod.XiangXiangInput \
-            --version 0.1.1 \
+            --version 0.1.2 \
             --scripts xiangxiang/package/scripts \
             --install-location / \
-            dist/XiangXiangInput-0.1.1-unsigned.pkg
+            dist/XiangXiangInput-0.1.2-unsigned.pkg
 
       - name: Upload test installer
         uses: actions/upload-artifact@v4
         with:
           name: XiangXiangInput-unsigned
-          path: dist/XiangXiangInput-0.1.1-unsigned.pkg
+          path: dist/XiangXiangInput-0.1.2-unsigned.pkg
           if-no-files-found: error
