@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import plistlib
 import subprocess
 import sys
@@ -58,8 +59,9 @@ def main() -> int:
     if not localized_info:
         raise RuntimeError("Missing localized InfoPlist.strings files")
     for path in localized_info:
-        with path.open("rb") as handle:
-            localized = plistlib.load(handle)
+        localized = json.loads(
+            subprocess.check_output(["plutil", "-convert", "json", "-o", "-", str(path)], text=True)
+        )
         for key in ("CFBundleDisplayName", "CFBundleName", EXPECTED_BUNDLE_ID, f"{EXPECTED_BUNDLE_ID}.Hans"):
             if localized.get(key) != EXPECTED_NAME:
                 raise RuntimeError(f"{path.name}:{key} is not branded as {EXPECTED_NAME}")
