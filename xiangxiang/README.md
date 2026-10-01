@@ -16,7 +16,7 @@
 
 1. 将整个项目推送到 GitHub。
 2. 打开 **Actions → Build XiangXiang Input → Run workflow**。
-3. 下载 `XiangXiangInput-0.1.5-user` artifact。
+3. 下载 `XiangXiangInput-0.1.6-user` artifact。
 4. 保持解压后的文件夹完整，双击 `Install XiangXiangInput.command`。
 
 当前产物是无签名测试版，安装到 `~/Library/Input Methods/`，不需管理员密码。

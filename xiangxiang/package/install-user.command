@@ -4,6 +4,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 source_archive="${script_dir}/XiangXiangInput.app.zip"
 entitlements="${script_dir}/adhoc-entitlements.plist"
+maintenance_entitlements="${script_dir}/maintenance-entitlements.plist"
 target_dir="${HOME}/Library/Input Methods"
 target_app="${target_dir}/XiangXiangInput.app"
 user_dir="${HOME}/Library/XiangXiangInput"
@@ -19,7 +20,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ]; then
+if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ] || [ ! -f "${maintenance_entitlements}" ]; then
   echo "Missing the app archive or entitlements beside this installer."
   exit 1
 fi
@@ -37,7 +38,7 @@ killall XiangXiangInput >/dev/null 2>&1 || true
 
 ditto -x -k "${source_archive}" "${work_dir}"
 xattr -dr com.apple.quarantine "${staged_app}" 2>/dev/null || true
-codesign --force --deep --sign - --entitlements "${entitlements}" "${staged_app}"
+codesign --force --deep --sign - --entitlements "${maintenance_entitlements}" "${staged_app}"
 codesign --verify --deep --strict "${staged_app}"
 
 if [ -d "${target_app}" ]; then
@@ -73,9 +74,16 @@ fi
 lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 "${lsregister}" -f "${target_app}"
 "${executable}" --register-input-source
-"${executable}" --build
+(cd "${user_dir}" && "${executable}" --build)
 "${executable}" --enable-input-source
-"${executable}" --select-input-source
+
+# The installed input method itself is sandboxed. Registration and deployment
+# run before this final signature because TIS maintenance is denied inside the
+# app sandbox on current macOS releases.
+codesign --force --deep --sign - --entitlements "${entitlements}" "${target_app}"
+codesign --verify --deep --strict "${target_app}"
+"${lsregister}" -f "${target_app}"
 
 echo "Installed XiangXiang Input Method for ${USER}."
-echo "If it does not appear immediately, log out and back in once."
+echo "Select 向向输入法 from the input menu."
+echo "After an upgrade, log out and back in once if macOS still shows an older name."

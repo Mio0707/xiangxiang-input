@@ -69,12 +69,13 @@ jobs:
       - name: Build user-local test bundle
         run: |
           app="upstream/build/Build/Products/Release/XiangXiangInput.app"
-          bundle="dist/XiangXiangInput-0.1.5-user"
+          bundle="dist/XiangXiangInput-0.1.6-user"
           mkdir -p "$bundle"
           codesign --verify --deep --strict --verbose=2 "$app"
           ditto -c -k --sequesterRsrc --keepParent "$app" "$bundle/XiangXiangInput.app.zip"
           cp xiangxiang/package/install-user.command "$bundle/Install XiangXiangInput.command"
           cp xiangxiang/adhoc-entitlements.plist "$bundle/"
+          cp xiangxiang/maintenance-entitlements.plist "$bundle/"
           cp xiangxiang/package/README.txt "$bundle/README.txt"
           chmod +x "$bundle/Install XiangXiangInput.command"
 
@@ -82,7 +83,7 @@ jobs:
         run: |
           mkdir -p staging/roundtrip
           ditto -x -k \
-            dist/XiangXiangInput-0.1.5-user/XiangXiangInput.app.zip \
+            dist/XiangXiangInput-0.1.6-user/XiangXiangInput.app.zip \
             staging/roundtrip
           codesign --verify --deep --strict --verbose=2 \
             staging/roundtrip/XiangXiangInput.app
@@ -91,6 +92,6 @@ jobs:
       - name: Upload user-local test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: XiangXiangInput-0.1.5-user
-          path: dist/XiangXiangInput-0.1.5-user
+          name: XiangXiangInput-0.1.6-user
+          path: dist/XiangXiangInput-0.1.6-user
           if-no-files-found: error

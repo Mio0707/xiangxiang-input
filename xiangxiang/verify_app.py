@@ -48,6 +48,8 @@ def main() -> int:
     embedded_strings = subprocess.check_output(["strings", str(executable)], text=True)
     if "/Library/Input Methods/XiangXiangInput.app" in embedded_strings:
         raise RuntimeError("Executable still depends on the system-wide app path")
+    if "User already registered Squirrel method(s)" in embedded_strings:
+        raise RuntimeError("Input-source registration still skips in-place upgrades")
 
     defaults = app / "Contents" / "SharedSupport" / "XiangXiangDefaults"
     for relative in (
@@ -84,10 +86,15 @@ def main() -> int:
     entitlements = plistlib.loads(entitlement_output[plist_start:])
     if entitlements.get("com.apple.security.cs.disable-library-validation") is not True:
         raise RuntimeError("Missing disable-library-validation entitlement")
-    if entitlements.get("com.apple.security.app-sandbox") is not False:
-        raise RuntimeError("Unexpected app sandbox entitlement")
+    if entitlements.get("com.apple.security.app-sandbox") is not True:
+        raise RuntimeError("Missing app sandbox entitlement")
     if entitlements.get("com.apple.security.get-task-allow") is not True:
         raise RuntimeError("Missing get-task-allow entitlement for ad-hoc test build")
+    expected_connection = f"{EXPECTED_BUNDLE_ID}_Connection"
+    if entitlements.get("com.apple.security.temporary-exception.mach-register.global-name") != expected_connection:
+        raise RuntimeError("Mach registration entitlement does not match InputMethodConnectionName")
+    if entitlements.get("com.apple.security.network.client") is True:
+        raise RuntimeError("Test build must not enable network access")
 
     print(f"Verified {EXPECTED_NAME}: {EXPECTED_BUNDLE_ID}; architectures: {' '.join(archs)}")
     return 0
