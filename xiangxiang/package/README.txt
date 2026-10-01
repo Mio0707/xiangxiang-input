@@ -1,4 +1,4 @@
-XiangXiang Input Method 0.1.3 (unsigned test build)
+XiangXiang Input Method 0.1.4 (unsigned test build)
 
 1. Keep this folder intact.
 2. Double-click "Install XiangXiangInput.command".

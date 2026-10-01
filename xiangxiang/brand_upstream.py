@@ -110,7 +110,13 @@ def main() -> int:
 
     main_swift = root / "sources" / "Main.swift"
     patch_user_directory(main_swift)
-    replace_required(main_swift, '"/Library/Input Methods/Squirrel.app"', '"/Library/Input Methods/XiangXiangInput.app"')
+    replace_required(
+        main_swift,
+        '''  static let appDir = "/Library/Input Methods/Squirrel.app".withCString { dir in
+    URL(fileURLWithFileSystemRepresentation: dir, isDirectory: false, relativeTo: nil)
+  }''',
+        "  static let appDir = Bundle.main.bundleURL",
+    )
     replace_required(main_swift, '"rime.squirrel-builder"', '"xiangxiang.input-builder"')
     replace_required(main_swift, '"rime.squirrel"', '"xiangxiang.input"')
 

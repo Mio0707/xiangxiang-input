@@ -45,6 +45,10 @@ def main() -> int:
     if set(archs) != {"arm64", "x86_64"}:
         raise RuntimeError(f"Expected universal binary, got: {' '.join(archs)}")
 
+    embedded_strings = subprocess.check_output(["strings", str(executable)], text=True)
+    if "/Library/Input Methods/XiangXiangInput.app" in embedded_strings:
+        raise RuntimeError("Executable still depends on the system-wide app path")
+
     defaults = app / "Contents" / "SharedSupport" / "XiangXiangDefaults"
     for relative in (
         "lua/sentence_recorder.lua",
