@@ -54,6 +54,20 @@ def main() -> int:
         if not (defaults / relative).is_file():
             raise RuntimeError(f"Missing bundled default: {relative}")
 
+    localized_info = list((app / "Contents" / "Resources").glob("*.lproj/InfoPlist.strings"))
+    if not localized_info:
+        raise RuntimeError("Missing localized InfoPlist.strings files")
+    for path in localized_info:
+        with path.open("rb") as handle:
+            localized = plistlib.load(handle)
+        for key in ("CFBundleDisplayName", "CFBundleName", EXPECTED_BUNDLE_ID, f"{EXPECTED_BUNDLE_ID}.Hans"):
+            if localized.get(key) != EXPECTED_NAME:
+                raise RuntimeError(f"{path.name}:{key} is not branded as {EXPECTED_NAME}")
+
+    visible_modes = info["ComponentInputModeDict"]["tsVisibleInputModeOrderedArrayKey"]
+    if visible_modes != [f"{EXPECTED_BUNDLE_ID}.Hans"]:
+        raise RuntimeError(f"Expected one Simplified Chinese input mode, got: {visible_modes}")
+
     print(f"Verified {EXPECTED_NAME}: {EXPECTED_BUNDLE_ID}; architectures: {' '.join(archs)}")
     return 0
 

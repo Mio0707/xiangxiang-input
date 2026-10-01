@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import plistlib
 import sys
 from pathlib import Path
@@ -60,12 +61,10 @@ def patch_info_plist(root: Path) -> None:
 
     modes = info["ComponentInputModeDict"]["tsInputModeListKey"]
     hans = modes.pop("im.rime.inputmethod.Squirrel.Hans")
-    hant = modes.pop("im.rime.inputmethod.Squirrel.Hant")
+    modes.pop("im.rime.inputmethod.Squirrel.Hant")
     hans["TISInputSourceID"] = HANS_ID
-    hant["TISInputSourceID"] = HANT_ID
     modes[HANS_ID] = hans
-    modes[HANT_ID] = hant
-    info["ComponentInputModeDict"]["tsVisibleInputModeOrderedArrayKey"] = [HANS_ID, HANT_ID]
+    info["ComponentInputModeDict"]["tsVisibleInputModeOrderedArrayKey"] = [HANS_ID]
 
     with path.open("wb") as handle:
         plistlib.dump(info, handle, sort_keys=False)
@@ -134,9 +133,20 @@ def main() -> int:
 
     strings = root / "resources" / "InfoPlist.xcstrings"
     if strings.is_file():
-        text = strings.read_text(encoding="utf-8")
-        text = text.replace("Squirrel Input Method", DISPLAY_NAME).replace("\u9f20\u9b1a\u7ba1", DISPLAY_NAME)
-        strings.write_text(text, encoding="utf-8")
+        catalog = json.loads(strings.read_text(encoding="utf-8"))
+        entries = catalog["strings"]
+        renamed_entries = {
+            "im.rime.inputmethod.Squirrel": BUNDLE_ID,
+            "im.rime.inputmethod.Squirrel.Hans": HANS_ID,
+            "im.rime.inputmethod.Squirrel.Hant": HANT_ID,
+        }
+        for old, new in renamed_entries.items():
+            if old in entries:
+                entries[new] = entries.pop(old)
+        for key in ("CFBundleDisplayName", "CFBundleName", BUNDLE_ID, HANS_ID, HANT_ID):
+            for localization in entries.get(key, {}).get("localizations", {}).values():
+                localization["stringUnit"]["value"] = DISPLAY_NAME
+        strings.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(f"Branded Squirrel as {DISPLAY_NAME} ({BUNDLE_ID})")
     return 0

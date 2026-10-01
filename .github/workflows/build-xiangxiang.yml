@@ -73,14 +73,14 @@ jobs:
           pkgbuild \
             --root staging \
             --identifier com.xiangxiang.inputmethod.XiangXiangInput \
-            --version 0.1.0 \
+            --version 0.1.1 \
             --scripts xiangxiang/package/scripts \
             --install-location / \
-            dist/XiangXiangInput-0.1.0-unsigned.pkg
+            dist/XiangXiangInput-0.1.1-unsigned.pkg
 
       - name: Upload test installer
         uses: actions/upload-artifact@v4
         with:
           name: XiangXiangInput-unsigned
-          path: dist/XiangXiangInput-0.1.0-unsigned.pkg
+          path: dist/XiangXiangInput-0.1.1-unsigned.pkg
           if-no-files-found: error
