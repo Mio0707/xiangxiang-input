@@ -11,6 +11,7 @@ user_dir="${HOME}/Library/XiangXiangInput"
 backup_root="${user_dir}/Backups"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 executable="${target_app}/Contents/MacOS/XiangXiangInput"
+deployer="${target_app}/Contents/MacOS/rime_deployer"
 defaults_dir="${target_app}/Contents/SharedSupport/XiangXiangDefaults"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/xiangxiang-install.XXXXXX")"
 staged_app="${work_dir}/XiangXiangInput.app"
@@ -71,10 +72,19 @@ if [ ! -e "${user_dir}/personal_translate.tsv" ]; then
   fi
 fi
 
+if [ -d "${user_dir}/build" ]; then
+  build_backup="${backup_root}/build-${timestamp}"
+  ditto "${user_dir}/build" "${build_backup}"
+  echo "Previous Rime build backed up to: ${build_backup}"
+fi
+
 lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 "${lsregister}" -f "${target_app}"
 "${executable}" --register-input-source
-(cd "${user_dir}" && "${executable}" --build)
+"${deployer}" --build \
+  "${user_dir}" \
+  "${target_app}/Contents/SharedSupport" \
+  "${user_dir}/build"
 "${executable}" --enable-input-source
 
 # The installed input method itself is sandboxed. Registration and deployment
