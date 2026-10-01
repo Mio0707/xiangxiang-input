@@ -60,29 +60,25 @@ jobs:
           cp xiangxiang/defaults/luna_pinyin.custom.yaml "$defaults/"
           printf '#rev=0\n' > "$defaults/personal_translate.tsv"
           codesign --force --deep --sign - \
-            --entitlements upstream/resources/Squirrel.entitlements \
+            --entitlements xiangxiang/adhoc-entitlements.plist \
             "$app"
 
       - name: Verify branded app
         run: python3 xiangxiang/verify_app.py upstream/build/Build/Products/Release/XiangXiangInput.app
 
-      - name: Build unsigned test installer
+      - name: Build user-local test bundle
         run: |
           app="upstream/build/Build/Products/Release/XiangXiangInput.app"
-          mkdir -p staging/Library/Input\ Methods dist
-          cp -R "$app" staging/Library/Input\ Methods/
-          chmod +x xiangxiang/package/scripts/postinstall
-          pkgbuild \
-            --root staging \
-            --identifier com.xiangxiang.inputmethod.XiangXiangInput \
-            --version 0.1.2 \
-            --scripts xiangxiang/package/scripts \
-            --install-location / \
-            dist/XiangXiangInput-0.1.2-unsigned.pkg
+          bundle="dist/XiangXiangInput-0.1.3-user"
+          mkdir -p "$bundle"
+          ditto "$app" "$bundle/XiangXiangInput.app"
+          cp xiangxiang/package/install-user.command "$bundle/Install XiangXiangInput.command"
+          cp xiangxiang/package/README.txt "$bundle/README.txt"
+          chmod +x "$bundle/Install XiangXiangInput.command"
 
-      - name: Upload test installer
+      - name: Upload user-local test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: XiangXiangInput-unsigned
-          path: dist/XiangXiangInput-0.1.2-unsigned.pkg
+          name: XiangXiangInput-0.1.3-user
+          path: dist/XiangXiangInput-0.1.3-user
           if-no-files-found: error

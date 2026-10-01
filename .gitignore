@@ -1,5 +1,6 @@
 dist/
 staging/
 upstream/
+backups/
 __pycache__/
 *.pyc

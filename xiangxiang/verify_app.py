@@ -30,6 +30,7 @@ def main() -> int:
         "CFBundleDisplayName": EXPECTED_NAME,
         "CFBundleExecutable": EXPECTED_EXECUTABLE,
         "TISInputSourceID": EXPECTED_BUNDLE_ID,
+        "InputMethodConnectionName": f"{EXPECTED_BUNDLE_ID}_Connection",
     }
     for key, value in expected.items():
         actual = info.get(key)
@@ -81,6 +82,8 @@ def main() -> int:
         raise RuntimeError("Missing disable-library-validation entitlement")
     if entitlements.get("com.apple.security.app-sandbox") is not False:
         raise RuntimeError("Unexpected app sandbox entitlement")
+    if entitlements.get("com.apple.security.get-task-allow") is not True:
+        raise RuntimeError("Missing get-task-allow entitlement for ad-hoc test build")
 
     print(f"Verified {EXPECTED_NAME}: {EXPECTED_BUNDLE_ID}; architectures: {' '.join(archs)}")
     return 0

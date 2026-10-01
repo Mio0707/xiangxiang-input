@@ -51,7 +51,9 @@ def patch_info_plist(root: Path) -> None:
     info["CFBundleExecutable"] = APP_NAME
     info["CFBundleName"] = DISPLAY_NAME
     info["CFBundleDisplayName"] = DISPLAY_NAME
-    info["InputMethodConnectionName"] = f"{APP_NAME}_Connection"
+    # Newer macOS releases require this exact bundle-ID-derived name. A short
+    # app-name-derived value can leave the input source visible but unusable.
+    info["InputMethodConnectionName"] = f"{BUNDLE_ID}_Connection"
     controller = f"{APP_NAME}.SquirrelInputController"
     info["InputMethodServerControllerClass"] = controller
     info["InputMethodServerDelegateClass"] = controller

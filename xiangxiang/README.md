@@ -16,9 +16,18 @@
 
 1. 将整个项目推送到 GitHub。
 2. 打开 **Actions → Build XiangXiang Input → Run workflow**。
-3. 下载 `XiangXiangInput-unsigned` artifact。
+3. 下载 `XiangXiangInput-0.1.3-user` artifact。
+4. 保持解压后的文件夹完整，双击 `Install XiangXiangInput.command`。
 
-当前产物是无签名测试包，仅用于开发验证。公开发布前需增加 Apple Developer ID 签名和公证。
+当前产物是无签名测试版，安装到 `~/Library/Input Methods/`，不需管理员密码。
+安装器不覆盖现有配置；如果已有旧 App，会先移到 `~/Library/XiangXiangInput/Backups/`。
+公开发布前仍需增加 Apple Developer ID 签名和公证。
+
+## 句子库
+
+- 实时数据唯一保存在 `~/Library/Application Support/personal-english-lexicon/`。
+- 向向输入法的记录器直接使用这个本地目录，不维护第二份可分叉数据库。
+- 现有 Rime 个人词库只在向向目录缺失时复制，不会覆盖。
 
 ## 上游与许可证
 
