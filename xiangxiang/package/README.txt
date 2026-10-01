@@ -1,6 +1,6 @@
-XiangXiang Input Method 0.1.4 (unsigned test build)
+XiangXiang Input Method 0.1.5 (unsigned test build)
 
-1. Keep this folder intact.
+1. Keep this folder intact; the app archive and entitlements are required.
 2. Double-click "Install XiangXiangInput.command".
 3. If macOS blocks it, right-click the file and choose Open.
 

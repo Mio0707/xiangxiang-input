@@ -2,7 +2,8 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-source_app="${script_dir}/XiangXiangInput.app"
+source_archive="${script_dir}/XiangXiangInput.app.zip"
+entitlements="${script_dir}/adhoc-entitlements.plist"
 target_dir="${HOME}/Library/Input Methods"
 target_app="${target_dir}/XiangXiangInput.app"
 user_dir="${HOME}/Library/XiangXiangInput"
@@ -10,9 +11,16 @@ backup_root="${user_dir}/Backups"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 executable="${target_app}/Contents/MacOS/XiangXiangInput"
 defaults_dir="${target_app}/Contents/SharedSupport/XiangXiangDefaults"
+work_dir="$(mktemp -d "${TMPDIR:-/tmp}/xiangxiang-install.XXXXXX")"
+staged_app="${work_dir}/XiangXiangInput.app"
 
-if [ ! -d "${source_app}" ]; then
-  echo "Missing XiangXiangInput.app beside this installer."
+cleanup() {
+  rm -rf "${work_dir}"
+}
+trap cleanup EXIT
+
+if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ]; then
+  echo "Missing the app archive or entitlements beside this installer."
   exit 1
 fi
 
@@ -27,14 +35,18 @@ mkdir -p "${target_dir}" "${user_dir}/lua" "${backup_root}"
 
 killall XiangXiangInput >/dev/null 2>&1 || true
 
+ditto -x -k "${source_archive}" "${work_dir}"
+xattr -dr com.apple.quarantine "${staged_app}" 2>/dev/null || true
+codesign --force --deep --sign - --entitlements "${entitlements}" "${staged_app}"
+codesign --verify --deep --strict "${staged_app}"
+
 if [ -d "${target_app}" ]; then
   backup_app="${backup_root}/XiangXiangInput-${timestamp}.app"
   mv "${target_app}" "${backup_app}"
   echo "Previous app backed up to: ${backup_app}"
 fi
 
-ditto "${source_app}" "${target_app}"
-xattr -dr com.apple.quarantine "${target_app}" 2>/dev/null || true
+ditto "${staged_app}" "${target_app}"
 
 copy_if_missing() {
   source_path="$1"
