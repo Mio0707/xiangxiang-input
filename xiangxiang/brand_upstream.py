@@ -42,6 +42,25 @@ def patch_user_directory(path: Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def patch_registration(path: Path) -> None:
+    """Make an in-place upgrade refresh the macOS input-source registration."""
+    text = path.read_text(encoding="utf-8")
+    start_marker = "  func register() {"
+    end_marker = "  func enable(modes: [InputMode] = []) {"
+    start = text.find(start_marker)
+    end = text.find(end_marker, start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"Could not find the input-source registration function in {path}")
+    replacement = '''  func register() {
+    // Always refresh the registration. Returning early here leaves macOS
+    // pointing at an older app after an in-place upgrade.
+    let error = TISRegisterInputSource(SquirrelApp.appDir as CFURL)
+    print("Registration \(error == noErr ? \"succeeds\" : \"fails\") from \(SquirrelApp.appDir)")
+  }
+'''
+    path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+
+
 def patch_info_plist(root: Path) -> None:
     path = root / "resources" / "Info.plist"
     with path.open("rb") as handle:
@@ -123,25 +142,7 @@ def main() -> int:
     input_source = root / "sources" / "InputSource.swift"
     replace_required(input_source, '"im.rime.inputmethod.Squirrel.Hans"', f'"{HANS_ID}"')
     replace_required(input_source, '"im.rime.inputmethod.Squirrel.Hant"', f'"{HANT_ID}"')
-    replace_required(
-        input_source,
-        '''  func register() {
-    let enabledInputModes = enabledModes()
-    if !enabledInputModes.isEmpty {
-      print("User already registered Squirrel method(s): \(enabledInputModes.map { $0.rawValue })")
-      // Already registered.
-      return
-    }
-    TISRegisterInputSource(SquirrelApp.appDir as CFURL)
-    print("Registered input source from \(SquirrelApp.appDir)")
-  }''',
-        '''  func register() {
-    // Always refresh the registration. Returning early here leaves macOS
-    // pointing at an older app after an in-place upgrade.
-    let error = TISRegisterInputSource(SquirrelApp.appDir as CFURL)
-    print("Registration \(error == noErr ? \"succeeds\" : \"fails\") from \(SquirrelApp.appDir)")
-  }''',
-    )
+    patch_registration(input_source)
 
     delegate = root / "sources" / "SquirrelApplicationDelegate.swift"
     replace_required(delegate, '"Squirrel"', f'"{APP_NAME}"')
