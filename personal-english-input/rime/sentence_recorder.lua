@@ -4,7 +4,10 @@
 
 local M = {}
 
-local HOME = os.getenv("HOME") or ""
+-- macOS rewrites HOME inside a sandboxed input method. Derive the real home
+-- directory from Rime's configured user directory instead.
+local USER_DIR = rime_api.get_user_data_dir()
+local HOME = USER_DIR:match("^(.*)/Library/[^/]+/?$") or (os.getenv("HOME") or "")
 local DATA_DIR = os.getenv("PERSONAL_ENGLISH_DATA_DIR") or
     (HOME .. "/Library/Application Support/personal-english-lexicon")
 local LOG_PATH = DATA_DIR .. "/sentences.tsv"

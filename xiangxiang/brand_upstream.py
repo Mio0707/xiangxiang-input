@@ -61,6 +61,76 @@ def patch_registration(path: Path) -> None:
     path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
 
 
+def patch_menu(path: Path) -> None:
+    """Replace Squirrel's maintenance menu with XiangXiang's user actions."""
+    text = path.read_text(encoding="utf-8")
+    start_marker = "  override func menu() -> NSMenu! {"
+    end_marker = "  private(set) var specialCommentIndices:"
+    start = text.find(start_marker)
+    end = text.find(end_marker, start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"Could not find the input menu in {path}")
+    replacement = '''  private var xiangXiangDataDir: URL {
+    SquirrelApp.userDir.deletingLastPathComponent()
+      .appendingPathComponent("Application Support/personal-english-lexicon", isDirectory: true)
+  }
+
+  private func xiangXiangItem(_ title: String, _ action: Selector) -> NSMenuItem {
+    let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+    item.target = self
+    return item
+  }
+
+  override func menu() -> NSMenu! {
+    let menu = NSMenu()
+    menu.addItem(xiangXiangItem("打开本地记录的句子", #selector(openRecordedSentences)))
+    menu.addItem(xiangXiangItem("打开句子翻译", #selector(openSentenceTranslations)))
+    menu.addItem(xiangXiangItem("打开词库", #selector(openVocabulary)))
+    menu.addItem(xiangXiangItem("上传词库", #selector(importDictionary)))
+    menu.addItem(xiangXiangItem("使用 Skill 校对并翻译句子", #selector(processSentences)))
+    return menu
+  }
+
+  private func xiangXiangOpen(_ url: URL, missingMessage: String) {
+    guard FileManager.default.fileExists(atPath: url.path) else {
+      let alert = NSAlert()
+      alert.messageText = missingMessage
+      alert.informativeText = "文件尚未生成。"
+      alert.runModal()
+      return
+    }
+    NSWorkspace.shared.open(url)
+  }
+
+  @objc func openRecordedSentences() {
+    xiangXiangOpen(xiangXiangDataDir.appendingPathComponent("sentences.tsv"),
+                  missingMessage: "还没有本地记录的句子")
+  }
+
+  @objc func openSentenceTranslations() {
+    xiangXiangOpen(xiangXiangDataDir.appendingPathComponent("reports/sentences.md"),
+                  missingMessage: "还没有句子翻译报告")
+  }
+
+  @objc func openVocabulary() {
+    xiangXiangOpen(xiangXiangDataDir.appendingPathComponent("reports/vocabulary.md"),
+                  missingMessage: "还没有个人词库报告")
+  }
+
+  @objc func importDictionary() {
+    xiangXiangOpen(SquirrelApp.userDir.appendingPathComponent("Tools/导入词库.command"),
+                  missingMessage: "词库导入工具未安装")
+  }
+
+  @objc func processSentences() {
+    xiangXiangOpen(SquirrelApp.userDir.appendingPathComponent("Tools/校对翻译句子.command"),
+                  missingMessage: "句子处理工具未安装")
+  }
+
+'''
+    path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+
+
 def patch_info_plist(root: Path) -> None:
     path = root / "resources" / "Info.plist"
     with path.open("rb") as handle:
@@ -103,6 +173,7 @@ def main() -> int:
         root / "sources" / "Main.swift",
         root / "sources" / "InputSource.swift",
         root / "sources" / "SquirrelApplicationDelegate.swift",
+        root / "sources" / "SquirrelInputController.swift",
     ]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
@@ -143,6 +214,8 @@ def main() -> int:
     replace_required(input_source, '"im.rime.inputmethod.Squirrel.Hans"', f'"{HANS_ID}"')
     replace_required(input_source, '"im.rime.inputmethod.Squirrel.Hant"', f'"{HANT_ID}"')
     patch_registration(input_source)
+
+    patch_menu(required[5])
 
     delegate = root / "sources" / "SquirrelApplicationDelegate.swift"
     replace_required(delegate, '"Squirrel"', f'"{APP_NAME}"')

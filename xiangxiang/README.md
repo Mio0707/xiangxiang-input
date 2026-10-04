@@ -9,18 +9,18 @@
 - Bundle ID：`com.xiangxiang.inputmethod.XiangXiangInput`
 - 用户数据：`~/Library/XiangXiangInput/`
 - 初始输入方案：`朙月拼音·简化字`
-- 候选词英文：仅使用用户的 `personal_translate.tsv`
+- 候选词英文：个人词库优先，导入词库后备
 - 记录：中文及鼠鬚管内部英文模式的混合句子
 
 ## 构建
 
 1. 将整个项目推送到 GitHub。
 2. 打开 **Actions → Build XiangXiang Input → Run workflow**。
-3. 下载 `XiangXiangInput-0.1.7-user` artifact。
+3. 下载 `XiangXiangInput-0.1.9-user` artifact。
 4. 保持解压后的文件夹完整，双击 `Install XiangXiangInput.command`。
 
 当前产物是无签名测试版，安装到 `~/Library/Input Methods/`，不需管理员密码。
-安装器不覆盖现有配置；如果已有旧 App，会先移到 `~/Library/XiangXiangInput/Backups/`。
+安装器不覆盖现有 YAML 配置；如果已有旧 App，会先移到 `~/Library/XiangXiangInput/Backups/`。更新本项目管理的两个 Lua 模块前，也会备份旧文件。
 公开发布前仍需增加 Apple Developer ID 签名和公证。
 
 ## 句子库
@@ -28,6 +28,24 @@
 - 实时数据唯一保存在 `~/Library/Application Support/personal-english-lexicon/`。
 - 向向输入法的记录器直接使用这个本地目录，不维护第二份可分叉数据库。
 - 现有 Rime 个人词库只在向向目录缺失时复制，不会覆盖。
+
+## 输入法菜单
+
+选中向向输入法后，菜单提供五个入口：打开原始句子记录、句子翻译报告、个人词库报告、上传词库，以及使用 Codex skill 校对并翻译尚未处理的句子。前四项只访问本地文件。最后一项打开终端运行 `personal-english-lexicon` skill；点击它才会将待处理句子交给 Codex，生成报告但不会自动发布到输入法词库。该项需要本机已安装并登录 Codex，且已安装同名 skill。
+
+## 导入自己的词库
+
+双击 `~/Library/XiangXiangInput/Tools/导入词库.command`，选择 UTF-8 编码的 CSV 或 TSV 文件。可以复制旁边的 `词库模板.csv` 填写；文件需要表头，例如：
+
+```csv
+中文,英文
+项目进度,project progress
+学习,study|learn
+```
+
+英语词表也可以用 `word,translation` 两列，例如 `apple,苹果`。中文一栏用 `；` 分隔的多个释义会分别建立词条。雅思、四六级词库由用户自行提供，本项目不附带第三方词表。
+
+导入的词库会立即加入本地候选词释义；已有个人词库优先，每个候选最多显示两个英文释义。导入前会备份原文件。导入只增加候选词旁的英文注释，不改变拼音候选词本身。
 
 ## 上游与许可证
 

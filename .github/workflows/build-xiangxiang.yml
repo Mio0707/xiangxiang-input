@@ -53,9 +53,7 @@ jobs:
           test -d "$app"
           mkdir -p "$defaults/lua"
           cp personal-english-input/rime/sentence_recorder.lua "$defaults/lua/"
-          sed 's#/Library/Rime/personal_translate.tsv#/Library/XiangXiangInput/personal_translate.tsv#' \
-            personal-english-input/rime/personal_translate.lua \
-            > "$defaults/lua/personal_translate.lua"
+          cp personal-english-input/rime/personal_translate.lua "$defaults/lua/"
           cp xiangxiang/defaults/default.custom.yaml "$defaults/"
           cp xiangxiang/defaults/luna_pinyin.custom.yaml "$defaults/"
           printf '#rev=0\n' > "$defaults/personal_translate.tsv"
@@ -69,7 +67,7 @@ jobs:
       - name: Build user-local test bundle
         run: |
           app="upstream/build/Build/Products/Release/XiangXiangInput.app"
-          bundle="dist/XiangXiangInput-0.1.7-user"
+          bundle="dist/XiangXiangInput-0.1.9-user"
           mkdir -p "$bundle"
           codesign --verify --deep --strict --verbose=2 "$app"
           ditto -c -k --sequesterRsrc --keepParent "$app" "$bundle/XiangXiangInput.app.zip"
@@ -77,13 +75,19 @@ jobs:
           cp xiangxiang/adhoc-entitlements.plist "$bundle/"
           cp xiangxiang/maintenance-entitlements.plist "$bundle/"
           cp xiangxiang/package/README.txt "$bundle/README.txt"
+          cp xiangxiang/dictionary_import.py "$bundle/dictionary_import.py"
+          cp xiangxiang/package/导入词库.command "$bundle/导入词库.command"
+          cp xiangxiang/package/校对翻译句子.command "$bundle/校对翻译句子.command"
+          cp xiangxiang/package/词库模板.csv "$bundle/词库模板.csv"
           chmod +x "$bundle/Install XiangXiangInput.command"
+          chmod +x "$bundle/导入词库.command"
+          chmod +x "$bundle/校对翻译句子.command"
 
       - name: Verify packaged app round trip
         run: |
           mkdir -p staging/roundtrip
           ditto -x -k \
-            dist/XiangXiangInput-0.1.7-user/XiangXiangInput.app.zip \
+            dist/XiangXiangInput-0.1.9-user/XiangXiangInput.app.zip \
             staging/roundtrip
           codesign --verify --deep --strict --verbose=2 \
             staging/roundtrip/XiangXiangInput.app
@@ -92,6 +96,6 @@ jobs:
       - name: Upload user-local test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: XiangXiangInput-0.1.7-user
-          path: dist/XiangXiangInput-0.1.7-user
+          name: XiangXiangInput-0.1.9-user
+          path: dist/XiangXiangInput-0.1.9-user
           if-no-files-found: error

@@ -21,7 +21,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ] || [ ! -f "${maintenance_entitlements}" ]; then
+if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ] || [ ! -f "${maintenance_entitlements}" ] ||
+   [ ! -f "${script_dir}/dictionary_import.py" ] || [ ! -f "${script_dir}/导入词库.command" ] ||
+   [ ! -f "${script_dir}/词库模板.csv" ] || [ ! -f "${script_dir}/校对翻译句子.command" ]; then
   echo "Missing the app archive or entitlements beside this installer."
   exit 1
 fi
@@ -58,10 +60,35 @@ copy_if_missing() {
   fi
 }
 
-copy_if_missing "${defaults_dir}/lua/sentence_recorder.lua" "${user_dir}/lua/sentence_recorder.lua"
-copy_if_missing "${defaults_dir}/lua/personal_translate.lua" "${user_dir}/lua/personal_translate.lua"
+install_managed_lua() {
+  source_path="$1"
+  destination_path="${user_dir}/lua/$(basename "${source_path}")"
+  if [ -f "${destination_path}" ] && ! cmp -s "${source_path}" "${destination_path}"; then
+    cp -p "${destination_path}" "${backup_root}/$(basename "${source_path}")-${timestamp}"
+  fi
+  cp "${source_path}" "${destination_path}"
+}
+
+install_managed_lua "${defaults_dir}/lua/sentence_recorder.lua"
+install_managed_lua "${defaults_dir}/lua/personal_translate.lua"
 copy_if_missing "${defaults_dir}/default.custom.yaml" "${user_dir}/default.custom.yaml"
 copy_if_missing "${defaults_dir}/luna_pinyin.custom.yaml" "${user_dir}/luna_pinyin.custom.yaml"
+
+mkdir -p "${user_dir}/Tools"
+install_tool() {
+  source_path="$1"
+  destination_path="${user_dir}/Tools/$(basename "${source_path}")"
+  if [ -f "${destination_path}" ] && ! cmp -s "${source_path}" "${destination_path}"; then
+    cp "${destination_path}" "${backup_root}/$(basename "${source_path}")-${timestamp}"
+  fi
+  cp "${source_path}" "${destination_path}"
+}
+install_tool "${script_dir}/dictionary_import.py"
+install_tool "${script_dir}/导入词库.command"
+install_tool "${script_dir}/校对翻译句子.command"
+copy_if_missing "${script_dir}/词库模板.csv" "${user_dir}/Tools/词库模板.csv"
+chmod +x "${user_dir}/Tools/导入词库.command"
+chmod +x "${user_dir}/Tools/校对翻译句子.command"
 
 if [ ! -e "${user_dir}/personal_translate.tsv" ]; then
   old_lexicon="${HOME}/Library/Rime/personal_translate.tsv"
@@ -96,4 +123,5 @@ codesign --verify --deep --strict "${target_app}"
 
 echo "Installed XiangXiang Input Method for ${USER}."
 echo "Select 向向输入法 from the input menu."
+echo "Import your own CSV/TSV at: ${user_dir}/Tools/导入词库.command"
 echo "After an upgrade, log out and back in once if macOS still shows an older name."

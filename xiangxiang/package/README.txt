@@ -1,11 +1,21 @@
-XiangXiang Input Method 0.1.7 (unsigned test build)
+XiangXiang Input Method 0.1.9 (unsigned test build)
 
 1. Keep this folder intact; the app archive and entitlements are required.
 2. Double-click "Install XiangXiangInput.command".
 3. If macOS blocks it, right-click the file and choose Open.
 
 This test installer uses ~/Library/Input Methods and does not require an
-administrator password. Existing XiangXiang configuration is not overwritten.
+administrator password. Existing XiangXiang YAML configuration is not overwritten.
 An existing app is moved to ~/Library/XiangXiangInput/Backups before replacement.
+Managed Lua modules are backed up there before an update.
+
+To import a bilingual CSV/TSV, double-click:
+  ~/Library/XiangXiangInput/Tools/导入词库.command
+The file needs Chinese and English columns. Personal translations take priority.
+
+The input-method menu opens local sentence and vocabulary reports, imports a
+dictionary, or starts the personal-english-lexicon skill in Codex. The skill
+requires Codex and is never run while typing. Publishing changes to candidate
+translations still requires explicit user approval.
 
 Public distribution still requires Developer ID signing and notarization.
