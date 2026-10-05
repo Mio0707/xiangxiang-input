@@ -67,35 +67,54 @@ jobs:
       - name: Build user-local test bundle
         run: |
           app="upstream/build/Build/Products/Release/XiangXiangInput.app"
-          bundle="dist/XiangXiangInput-0.1.9-user"
+          bundle="dist/XiangXiangInput-0.1.10-user"
           mkdir -p "$bundle"
+          helper="$bundle/XiangXiangDictionaryImporter.app"
+          mkdir -p "$helper/Contents/MacOS"
+          cp xiangxiang/dictionary_import_app/Info.plist "$helper/Contents/Info.plist"
+          for arch in arm64 x86_64; do
+            swiftc -target "${arch}-apple-macosx13.0" \
+              xiangxiang/dictionary_import_app/main.swift \
+              -o "${RUNNER_TEMP}/XiangXiangDictionaryImporter-${arch}"
+          done
+          lipo -create \
+            "${RUNNER_TEMP}/XiangXiangDictionaryImporter-arm64" \
+            "${RUNNER_TEMP}/XiangXiangDictionaryImporter-x86_64" \
+            -output "$helper/Contents/MacOS/XiangXiangDictionaryImporter"
+          codesign --force --sign - "$helper"
+          codesign --verify --deep --strict --verbose=2 "$helper"
           codesign --verify --deep --strict --verbose=2 "$app"
           ditto -c -k --sequesterRsrc --keepParent "$app" "$bundle/XiangXiangInput.app.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$helper" "$bundle/XiangXiangDictionaryImporter.app.zip"
+          rm -r "$helper"
           cp xiangxiang/package/install-user.command "$bundle/Install XiangXiangInput.command"
           cp xiangxiang/adhoc-entitlements.plist "$bundle/"
           cp xiangxiang/maintenance-entitlements.plist "$bundle/"
           cp xiangxiang/package/README.txt "$bundle/README.txt"
           cp xiangxiang/dictionary_import.py "$bundle/dictionary_import.py"
           cp xiangxiang/package/导入词库.command "$bundle/导入词库.command"
-          cp xiangxiang/package/校对翻译句子.command "$bundle/校对翻译句子.command"
           cp xiangxiang/package/词库模板.csv "$bundle/词库模板.csv"
           chmod +x "$bundle/Install XiangXiangInput.command"
           chmod +x "$bundle/导入词库.command"
-          chmod +x "$bundle/校对翻译句子.command"
 
       - name: Verify packaged app round trip
         run: |
           mkdir -p staging/roundtrip
           ditto -x -k \
-            dist/XiangXiangInput-0.1.9-user/XiangXiangInput.app.zip \
+            dist/XiangXiangInput-0.1.10-user/XiangXiangInput.app.zip \
             staging/roundtrip
           codesign --verify --deep --strict --verbose=2 \
             staging/roundtrip/XiangXiangInput.app
           python3 xiangxiang/verify_app.py staging/roundtrip/XiangXiangInput.app
+          ditto -x -k \
+            dist/XiangXiangInput-0.1.10-user/XiangXiangDictionaryImporter.app.zip \
+            staging/roundtrip
+          codesign --verify --deep --strict --verbose=2 \
+            staging/roundtrip/XiangXiangDictionaryImporter.app
 
       - name: Upload user-local test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: XiangXiangInput-0.1.9-user
-          path: dist/XiangXiangInput-0.1.9-user
+          name: XiangXiangInput-0.1.10-user
+          path: dist/XiangXiangInput-0.1.10-user
           if-no-files-found: error

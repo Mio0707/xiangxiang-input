@@ -87,7 +87,6 @@ def patch_menu(path: Path) -> None:
     menu.addItem(xiangXiangItem("打开句子翻译", #selector(openSentenceTranslations)))
     menu.addItem(xiangXiangItem("打开词库", #selector(openVocabulary)))
     menu.addItem(xiangXiangItem("上传词库", #selector(importDictionary)))
-    menu.addItem(xiangXiangItem("使用 Skill 校对并翻译句子", #selector(processSentences)))
     return menu
   }
 
@@ -118,13 +117,8 @@ def patch_menu(path: Path) -> None:
   }
 
   @objc func importDictionary() {
-    xiangXiangOpen(SquirrelApp.userDir.appendingPathComponent("Tools/导入词库.command"),
+    xiangXiangOpen(SquirrelApp.userDir.appendingPathComponent("Tools/XiangXiangDictionaryImporter.app"),
                   missingMessage: "词库导入工具未安装")
-  }
-
-  @objc func processSentences() {
-    xiangXiangOpen(SquirrelApp.userDir.appendingPathComponent("Tools/校对翻译句子.command"),
-                  missingMessage: "句子处理工具未安装")
   }
 
 '''

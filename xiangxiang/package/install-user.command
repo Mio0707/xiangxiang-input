@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 source_archive="${script_dir}/XiangXiangInput.app.zip"
+helper_archive="${script_dir}/XiangXiangDictionaryImporter.app.zip"
 entitlements="${script_dir}/adhoc-entitlements.plist"
 maintenance_entitlements="${script_dir}/maintenance-entitlements.plist"
 target_dir="${HOME}/Library/Input Methods"
@@ -15,15 +16,17 @@ deployer="${target_app}/Contents/MacOS/rime_deployer"
 defaults_dir="${target_app}/Contents/SharedSupport/XiangXiangDefaults"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/xiangxiang-install.XXXXXX")"
 staged_app="${work_dir}/XiangXiangInput.app"
+staged_helper="${work_dir}/XiangXiangDictionaryImporter.app"
 
 cleanup() {
   rm -rf "${work_dir}"
 }
 trap cleanup EXIT
 
-if [ ! -f "${source_archive}" ] || [ ! -f "${entitlements}" ] || [ ! -f "${maintenance_entitlements}" ] ||
+if [ ! -f "${source_archive}" ] || [ ! -f "${helper_archive}" ] ||
+   [ ! -f "${entitlements}" ] || [ ! -f "${maintenance_entitlements}" ] ||
    [ ! -f "${script_dir}/dictionary_import.py" ] || [ ! -f "${script_dir}/导入词库.command" ] ||
-   [ ! -f "${script_dir}/词库模板.csv" ] || [ ! -f "${script_dir}/校对翻译句子.command" ]; then
+   [ ! -f "${script_dir}/词库模板.csv" ]; then
   echo "Missing the app archive or entitlements beside this installer."
   exit 1
 fi
@@ -40,9 +43,13 @@ mkdir -p "${target_dir}" "${user_dir}/lua" "${backup_root}"
 killall XiangXiangInput >/dev/null 2>&1 || true
 
 ditto -x -k "${source_archive}" "${work_dir}"
+ditto -x -k "${helper_archive}" "${work_dir}"
 xattr -dr com.apple.quarantine "${staged_app}" 2>/dev/null || true
+xattr -dr com.apple.quarantine "${staged_helper}" 2>/dev/null || true
 codesign --force --deep --sign - --entitlements "${maintenance_entitlements}" "${staged_app}"
 codesign --verify --deep --strict "${staged_app}"
+codesign --force --sign - "${staged_helper}"
+codesign --verify --deep --strict "${staged_helper}"
 
 if [ -d "${target_app}" ]; then
   backup_app="${backup_root}/XiangXiangInput-${timestamp}.app"
@@ -75,6 +82,13 @@ copy_if_missing "${defaults_dir}/default.custom.yaml" "${user_dir}/default.custo
 copy_if_missing "${defaults_dir}/luna_pinyin.custom.yaml" "${user_dir}/luna_pinyin.custom.yaml"
 
 mkdir -p "${user_dir}/Tools"
+helper_app="${user_dir}/Tools/XiangXiangDictionaryImporter.app"
+if [ -e "${helper_app}" ]; then
+  helper_backup="${backup_root}/XiangXiangDictionaryImporter-${timestamp}.app"
+  mv "${helper_app}" "${helper_backup}"
+  echo "Previous dictionary importer backed up to: ${helper_backup}"
+fi
+ditto "${staged_helper}" "${helper_app}"
 install_tool() {
   source_path="$1"
   destination_path="${user_dir}/Tools/$(basename "${source_path}")"
@@ -85,10 +99,8 @@ install_tool() {
 }
 install_tool "${script_dir}/dictionary_import.py"
 install_tool "${script_dir}/导入词库.command"
-install_tool "${script_dir}/校对翻译句子.command"
 copy_if_missing "${script_dir}/词库模板.csv" "${user_dir}/Tools/词库模板.csv"
 chmod +x "${user_dir}/Tools/导入词库.command"
-chmod +x "${user_dir}/Tools/校对翻译句子.command"
 
 if [ ! -e "${user_dir}/personal_translate.tsv" ]; then
   old_lexicon="${HOME}/Library/Rime/personal_translate.tsv"

@@ -24,9 +24,11 @@ class XiangXiangMenuTest(unittest.TestCase):
             output = path.read_text(encoding="utf-8")
         for title in (
             "打开本地记录的句子", "打开句子翻译", "打开词库", "上传词库",
-            "使用 Skill 校对并翻译句子",
         ):
             self.assertIn(title, output)
+        self.assertNotIn("使用 Skill 校对并翻译句子", output)
+        self.assertIn('Tools/XiangXiangDictionaryImporter.app', output)
+        self.assertNotIn('Tools/导入词库.command', output)
         self.assertNotIn('title: "Deploy"', output)
         self.assertIn("private(set) var specialCommentIndices:", output)
 

@@ -16,7 +16,7 @@
 
 1. 将整个项目推送到 GitHub。
 2. 打开 **Actions → Build XiangXiang Input → Run workflow**。
-3. 下载 `XiangXiangInput-0.1.9-user` artifact。
+3. 下载 `XiangXiangInput-0.1.10-user` artifact。
 4. 保持解压后的文件夹完整，双击 `Install XiangXiangInput.command`。
 
 当前产物是无签名测试版，安装到 `~/Library/Input Methods/`，不需管理员密码。
@@ -31,11 +31,11 @@
 
 ## 输入法菜单
 
-选中向向输入法后，菜单提供五个入口：打开原始句子记录、句子翻译报告、个人词库报告、上传词库，以及使用 Codex skill 校对并翻译尚未处理的句子。前四项只访问本地文件。最后一项打开终端运行 `personal-english-lexicon` skill；点击它才会将待处理句子交给 Codex，生成报告但不会自动发布到输入法词库。该项需要本机已安装并登录 Codex，且已安装同名 skill。
+选中向向输入法后，菜单提供四个本地入口：打开原始句子记录、句子翻译报告、个人词库报告，以及上传词库。句子校对翻译仍可在 Codex 中主动运行 `personal-english-lexicon` skill；输入法菜单不会启动它。
 
 ## 导入自己的词库
 
-双击 `~/Library/XiangXiangInput/Tools/导入词库.command`，选择 UTF-8 编码的 CSV 或 TSV 文件。可以复制旁边的 `词库模板.csv` 填写；文件需要表头，例如：
+在输入法菜单点击“上传词库”，独立的本地图形导入工具会让你选择 UTF-8 编码的 CSV 或 TSV 文件，不需要打开终端。也可以手动双击 `~/Library/XiangXiangInput/Tools/导入词库.command`。可以复制旁边的 `词库模板.csv` 填写；文件需要表头，例如：
 
 ```csv
 中文,英文
